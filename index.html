@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Kanji Quest</title>
 <style>
   :root {
@@ -11,11 +11,9 @@
     --accent: #6cf;
     --accent2: #ffcc66;
     --text: #e9ecf1;
-    --grass: #2f7b3b;
-    --path: #7b6a4b;
-    --water: #2d4f8a;
     --hp: #69d06c;
     --hp-opp: #ff6666;
+    --gap: 12px;
   }
   * { box-sizing: border-box }
   html, body { height: 100% }
@@ -23,18 +21,18 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    font: clamp(14px, 2.2vw, 16px)/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     display: grid;
     place-items: center;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)
   }
 
   .game {
-    width: 980px;
-    max-width: 100vw;
+    width: min(100vw, 1000px);
     display: grid;
-    grid-template-columns: 640px 1fr;
-    gap: 12px;
-    padding: 12px;
+    grid-template-columns: 640fr 340fr;
+    gap: var(--gap);
+    padding: var(--gap);
   }
 
   .screen, .panel {
@@ -47,8 +45,9 @@
 
   /* Overworld */
   .screen {
-    aspect-ratio: 4/3;
     position: relative;
+    aspect-ratio: 4/3;
+    touch-action: none; /* stop double-tap zoom/pan while using controls */
   }
   .map {
     position: absolute;
@@ -76,6 +75,7 @@
     font-weight: 900;
     text-shadow: 0 2px 0 #0008;
     filter: drop-shadow(0 4px 4px #0008);
+    pointer-events: none;
   }
   .sprite {
     width: 70%;
@@ -92,20 +92,21 @@
     inset: 0;
     background: linear-gradient(180deg, #111a, #000c), radial-gradient(1200px 600px at 50% 80%, #2b3350, #0b0d14);
     display: none;
-    padding: 16px;
+    padding: 10px;
+    gap: 10px;
   }
   .battle.active { display: grid; grid-template-rows: 1fr auto }
 
   .battle-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .card {
     background: #ffffff10;
     border: 2px solid #0008;
     border-radius: 10px;
-    padding: 12px;
+    padding: 10px;
   }
   .name { font-weight: 800; letter-spacing: .5px }
   .hpbar {
@@ -119,14 +120,14 @@
   .hpbar.enemy > div { background: var(--hp-opp) }
 
   .kanji {
-    font-size: 92px;
+    font-size: clamp(60px, 12vw, 96px);
     text-align: center;
     line-height: 1;
-    padding: 8px 0 0;
+    padding: 6px 0 0;
   }
 
   .battle-actions {
-    margin-top: 12px;
+    margin-top: 6px;
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
@@ -136,11 +137,12 @@
     background: #111a;
     color: var(--text);
     border: 2px solid #000;
-    border-radius: 10px;
-    padding: 10px 12px;
+    border-radius: 12px;
+    padding: clamp(10px, 2.4vw, 14px) 12px;
     font: inherit;
     cursor: pointer;
     box-shadow: 0 2px 0 #0008;
+    -webkit-tap-highlight-color: transparent;
   }
   button:hover { background: #182137 }
   button.primary { background: #20355c; border-color: #000; box-shadow: 0 2px 0 #0008, inset 0 0 0 2px #ffffff10 }
@@ -156,23 +158,79 @@
 
   /* Sidebar */
   .panel { padding: 12px }
-  .row { display: flex; align-items: center; justify-content: space-between }
-  .xp { height: 8px; background: #0006; border-radius: 6px; overflow: hidden }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+  .xp { height: 8px; background: #0006; border-radius: 6px; overflow: hidden; min-width: 120px }
   .xp > div { height: 100%; background: var(--accent2) }
   .stat { opacity: .9 }
   .kbd { padding: 2px 6px; border: 1px solid #ffffff20; border-bottom-width: 2px; border-radius: 6px; background: #0003; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace }
 
   .muted { opacity: .8; font-size: 14px }
   .footer { margin-top: 8px; font-size: 13px; opacity: .8 }
+
+  /* On-screen controls */
+  .controls {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    pointer-events: none; /* let buttons decide */
+  }
+  .dpad, .act {
+    display: grid;
+    pointer-events: auto;
+  }
+  .dpad {
+    grid-template-areas:
+      ".    up    ."
+      "left mid right"
+      ".   down   .";
+    gap: 8px;
+    justify-self: start;
+    width: min(42vw, 240px);
+    touch-action: manipulation;
+  }
+  .dpad button { padding: 12px 0 }
+  .btn-up   { grid-area: up }
+  .btn-down { grid-area: down }
+  .btn-left { grid-area: left }
+  .btn-right{ grid-area: right }
+  .btn-mid  { grid-area: mid; visibility: hidden }
+  .act {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    justify-self: end;
+    width: min(42vw, 260px);
+  }
+  .controls button { font-size: clamp(14px, 3.5vw, 16px) }
+
+  /* Layout for small screens */
+  @media (max-width: 900px) {
+    .game {
+      grid-template-columns: 1fr;
+    }
+    .panel {
+      order: 2;
+    }
+    .screen {
+      order: 1;
+      width: 100%;
+    }
+    .battle-top {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 </head>
 <body>
 <div class="game">
-  <div class="screen">
+  <div class="screen" id="screen">
     <div id="map" class="map"></div>
     <div id="player" class="player"><div class="sprite"></div></div>
 
-    <div id="battle" class="battle">
+    <!-- Battle overlay -->
+    <div id="battle" class="battle" aria-live="polite">
       <div class="battle-top">
         <div class="card">
           <div class="name">You (Lv <span id="pLevel"></span>)</div>
@@ -199,23 +257,40 @@
         </div>
       </div>
     </div>
+
+    <!-- On-screen controls (mobile + desktop touch) -->
+    <div class="controls" id="controls">
+      <div class="dpad">
+        <button class="btn-up"   data-dir="up">▲</button>
+        <button class="btn-left" data-dir="left">◀</button>
+        <button class="btn-mid" disabled>•</button>
+        <button class="btn-right" data-dir="right">▶</button>
+        <button class="btn-down" data-dir="down">▼</button>
+      </div>
+      <div class="act">
+        <button id="hintBtn2">Hint</button>
+        <button id="runBtn2">Run</button>
+      </div>
+    </div>
   </div>
 
   <div class="panel">
     <div class="row">
       <div><b>Kanji Quest</b></div>
-      <div class="muted">v0.1</div>
+      <div class="muted">v0.2 (mobile)</div>
     </div>
     <hr style="border:none;border-top:1px solid #0004;margin:10px 0">
     <div class="row"><div>Level</div><div id="level">1</div></div>
-    <div class="row"><div>XP</div><div style="min-width:140px" class="xp"><div id="xpBar" style="width:0%"></div></div></div>
+    <div class="row"><div>XP</div><div class="xp"><div id="xpBar" style="width:0%"></div></div></div>
     <div class="row"><div>HP</div><div id="hp" class="stat">20 / 20</div></div>
     <div class="row"><div>Streak</div><div id="streak" class="stat">0</div></div>
     <div class="row"><div>Tiles Explored</div><div id="steps" class="stat">0</div></div>
 
     <hr style="border:none;border-top:1px solid #0004;margin:10px 0">
     <div><b>Controls</b></div>
-    <div class="muted">Move with <span class="kbd">↑</span> <span class="kbd">↓</span> <span class="kbd">←</span> <span class="kbd">→</span> • Start battle actions with your mouse or <span class="kbd">1-4</span></div>
+    <div class="muted">
+      Move with arrow keys or on‑screen D‑pad • Choose answers by tapping • Hint/Run buttons duplicated near the D‑pad
+    </div>
 
     <div class="footer">
       Progress auto-saves in your browser. Beat kanji to earn XP and level up to face harder ones.
@@ -229,7 +304,6 @@
 
 <script>
   // --- Minimal Kanji pool (N5 → N4) ---
-  // Each entry: char, meanings[], on, kun, tag(difficulty 1..5)
   const KANJI = [
     {c:'日', m:['sun','day'], on:['ニチ','ジツ'], kun:['ひ','-び','-か'], tag:1},
     {c:'月', m:['moon','month'], on:['ゲツ','ガツ'], kun:['つき'], tag:1},
@@ -241,14 +315,11 @@
     {c:'本', m:['book','origin'], on:['ホン'], kun:['もと'], tag:1},
     {c:'人', m:['person'], on:['ジン','ニン'], kun:['ひと'], tag:1},
     {c:'大', m:['big'], on:['ダイ','タイ'], kun:['おお-'], tag:1},
-
     {c:'上', m:['up','above'], on:['ジョウ'], kun:['うえ','あ-がる'], tag:1},
     {c:'下', m:['down','below'], on:['カ','ゲ'], kun:['した','さ-がる'], tag:1},
     {c:'右', m:['right'], on:['ウ','ユウ'], kun:['みぎ'], tag:1},
     {c:'左', m:['left'], on:['サ'], kun:['ひだり'], tag:1},
     {c:'中', m:['middle','inside'], on:['チュウ'], kun:['なか'], tag:1},
-
-    // a few N4-ish
     {c:'働', m:['work','labor'], on:['ドウ'], kun:['はたら-く'], tag:2},
     {c:'信', m:['trust','faith'], on:['シン'], kun:[], tag:2},
     {c:'習', m:['learn'], on:['シュウ'], kun:['なら-う'], tag:2},
@@ -257,13 +328,14 @@
     {c:'軽', m:['light (weight)'], on:['ケイ'], kun:['かる-い'], tag:2},
   ]
 
-  // --- Map generation ---
+  // --- Map / DOM refs ---
   const W = 20, H = 15
   const mapEl = document.getElementById('map')
   const playerEl = document.getElementById('player')
   const battleEl = document.getElementById('battle')
   const sysMsg = document.getElementById('sysMsg')
   const choicesEl = document.getElementById('choices')
+  const controlsEl = document.getElementById('controls')
 
   let map = []
   function genMap() {
@@ -299,17 +371,11 @@
     hp: 20, hpMax: 20,
     level: 1, xp: 0, streak: 0, steps: 0
   }
-
-  function save() {
-    localStorage.setItem('kanjiquest', JSON.stringify(state))
-  }
+  function save() { localStorage.setItem('kanjiquest', JSON.stringify(state)) }
   function load() {
     const s = localStorage.getItem('kanjiquest')
     if (!s) return
-    try {
-      const parsed = JSON.parse(s)
-      Object.assign(state, parsed)
-    } catch {}
+    try { Object.assign(state, JSON.parse(s)) } catch {}
   }
 
   // --- UI helpers ---
@@ -324,23 +390,21 @@
 
   function xpForNext(level) { return 20 + (level-1)*15 }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)) }
-
   function refreshSidebar() {
     levelEl.textContent = state.level
     hpEl.textContent = `${state.hp} / ${state.hpMax}`
     const need = xpForNext(state.level)
-    xpBar.style.width = `${clamp(state.xp / need * 100, 0, 100)}%`
+    xpBar.style.width = `${Math.max(0, Math.min(100, state.xp / need * 100))}%`
     stepsEl.textContent = state.steps
     streakEl.textContent = state.streak
   }
-
   function placePlayer() {
     const w = playerEl.getBoundingClientRect().width
     const h = playerEl.getBoundingClientRect().height
     playerEl.style.transform = `translate(${state.x * w}px, ${state.y * h}px)`
   }
 
-  // --- Encounters / Battle ---
+  // --- Battle refs ---
   const kanjiChar = document.getElementById('kanjiChar')
   const readingHint = document.getElementById('readingHint')
   const kanjiTag = document.getElementById('kanjiTag')
@@ -348,11 +412,11 @@
   const eLevel = document.getElementById('eLevel')
   const hintBtn = document.getElementById('hintBtn')
   const runBtn = document.getElementById('runBtn')
+  const hintBtn2 = document.getElementById('hintBtn2')
+  const runBtn2 = document.getElementById('runBtn2')
 
   let battle = null
-
   function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)] }
-
   function pickKanjiForLevel(level) {
     const pool = KANJI.filter(k => k.tag <= Math.ceil(level/2)+1)
     return randomFrom(pool)
@@ -368,6 +432,7 @@
       over: false
     }
     battleEl.classList.add('active')
+    controlsEl.style.display = 'none' // hide D-pad during battle
     kanjiChar.textContent = k.c
     readingHint.textContent = '—'
     kanjiTag.textContent = k.tag === 1 ? 'N5' : 'N4'
@@ -383,19 +448,18 @@
     pHPBar.style.width = `${state.hp / state.hpMax * 100}%`
     eHPBar.style.width = `${battle.enemyHP / battle.enemyHPMax * 100}%`
   }
-
   function sys(t) { sysMsg.textContent = t }
 
   function endBattle(won) {
     battle.over = true
     setTimeout(() => {
       battleEl.classList.remove('active')
+      controlsEl.style.display = '' // restore controls
       if (won) {
         const gain = 8 + Math.floor(Math.random()*5) + (battle.k.tag-1)*4
         state.xp += gain
         state.streak += 1
         sys(`You won and gained ${gain} XP!`)
-        // Level up
         let leveled = false
         while (state.xp >= xpForNext(state.level)) {
           state.xp -= xpForNext(state.level)
@@ -411,7 +475,7 @@
       }
       refreshSidebar()
       save()
-    }, 400)
+    }, 300)
   }
 
   function enemyStrike() {
@@ -449,24 +513,21 @@
   }
 
   function choose(label, correct) {
-    if (battle.over) return
+    if (!battle || battle.over) return
     if (label === correct) {
       const dmg = 6 + state.level + Math.floor(Math.random()*3)
       battle.enemyHP = clamp(battle.enemyHP - dmg, 0, battle.enemyHPMax)
       sys(`Super effective! -${dmg} HP`)
       renderBattle()
-      if (battle.enemyHP <= 0) {
-        endBattle(true)
-      } else {
-        setTimeout(enemyStrike, 400)
-      }
+      if (battle.enemyHP <= 0) endBattle(true)
+      else setTimeout(enemyStrike, 300)
     } else {
       sys(`Not quite… The correct meaning includes “${correct}”.`)
       setTimeout(enemyStrike, 200)
     }
   }
 
-  hintBtn.onclick = () => {
+  function revealHint() {
     if (!battle || battle.shownHint) return
     const k = battle.k
     const on = k.on[0] || ''
@@ -475,26 +536,92 @@
     battle.shownHint = true
     sys('Hint revealed: first reading shown.')
   }
-  runBtn.onclick = () => {
+  function tryRun() {
     if (!battle) return
     if (Math.random() < 0.8) endBattle(false)
     else { sys('Couldn’t escape!'); setTimeout(enemyStrike, 250) }
   }
+  hintBtn.onclick = revealHint
+  runBtn.onclick = tryRun
+  hintBtn2.onclick = revealHint
+  runBtn2.onclick = tryRun
 
-  // --- Overworld movement & encounters ---
+  // --- Keyboard support (desktop) ---
   let keyHeld = {}
   window.addEventListener('keydown', e => {
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
       e.preventDefault()
       keyHeld[e.key] = true
       moveTick()
+      startMoveLoop()
     } else if (battleEl.classList.contains('active') && ['1','2','3','4'].includes(e.key)) {
       const i = Number(e.key) - 1
       const btn = choicesEl.children[i]
       if (btn) btn.click()
     }
   })
-  window.addEventListener('keyup', e => { keyHeld[e.key] = false })
+  window.addEventListener('keyup', e => {
+    keyHeld[e.key] = false
+    if (!anyDirectionHeld()) stopMoveLoop()
+  })
+
+  // --- Touch / D-pad support ---
+  const dirMap = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] }
+  let touchHeld = { up:false, down:false, left:false, right:false }
+  document.querySelectorAll('[data-dir]').forEach(btn => {
+    const dir = btn.getAttribute('data-dir')
+    const start = e => {
+      e.preventDefault()
+      touchHeld[dir] = true
+      moveTick()
+      startMoveLoop()
+    }
+    const end = e => {
+      e.preventDefault()
+      touchHeld[dir] = false
+      if (!anyDirectionHeld()) stopMoveLoop()
+    }
+    btn.addEventListener('touchstart', start, { passive:false })
+    btn.addEventListener('touchend', end)
+    btn.addEventListener('touchcancel', end)
+    btn.addEventListener('mousedown', start)
+    btn.addEventListener('mouseup', end)
+    btn.addEventListener('mouseleave', end)
+  })
+
+  function anyDirectionHeld() {
+    return keyHeld.ArrowUp || keyHeld.ArrowDown || keyHeld.ArrowLeft || keyHeld.ArrowRight
+      || touchHeld.up || touchHeld.down || touchHeld.left || touchHeld.right
+  }
+
+  // Continuous move loop (works for key & touch)
+  let moveTimer = null
+  function startMoveLoop() {
+    if (moveTimer) return
+    const step = () => {
+      if (!anyDirectionHeld() || battleEl.classList.contains('active')) {
+        stopMoveLoop()
+        return
+      }
+      moveTick()
+      moveTimer = setTimeout(step, 110)
+    }
+    moveTimer = setTimeout(step, 110)
+  }
+  function stopMoveLoop() {
+    clearTimeout(moveTimer)
+    moveTimer = null
+  }
+
+  // Calculate intended direction each tick
+  function desiredDelta() {
+    let dx = 0, dy = 0
+    if (keyHeld.ArrowUp || touchHeld.up) dy = -1
+    else if (keyHeld.ArrowDown || touchHeld.down) dy = 1
+    else if (keyHeld.ArrowLeft || touchHeld.left) dx = -1
+    else if (keyHeld.ArrowRight || touchHeld.right) dx = 1
+    return [dx, dy]
+  }
 
   function canWalk(x,y) {
     if (x<0 || y<0 || x>=W || y>=H) return false
@@ -507,11 +634,7 @@
     if (battleEl.classList.contains('active')) return
     const now = performance.now()
     if (now < moveCooldown) return
-    let dx = 0, dy = 0
-    if (keyHeld.ArrowUp) dy = -1
-    else if (keyHeld.ArrowDown) dy = 1
-    else if (keyHeld.ArrowLeft) dx = -1
-    else if (keyHeld.ArrowRight) dx = 1
+    const [dx, dy] = desiredDelta()
     if (!dx && !dy) return
     const nx = state.x + dx
     const ny = state.y + dy
@@ -521,9 +644,7 @@
       state.steps += 1
       placePlayer()
       refreshSidebar()
-      if (map[ny][nx] === 't-grass' && Math.random() < encounterChance()) {
-        startBattle()
-      }
+      if (map[ny][nx] === 't-grass' && Math.random() < encounterChance()) startBattle()
       moveCooldown = now + 90
     }
   }
